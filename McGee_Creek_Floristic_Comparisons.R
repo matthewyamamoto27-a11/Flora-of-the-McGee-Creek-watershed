@@ -1,3 +1,15 @@
+library(tidyverse)
+library(readxl)
+library(data.table)
+library(sf)
+library(usmap) 
+library(stats)
+library(USAboundaries)
+library(writexl)
+library(TNRS)
+library(arrow) 
+library(dplyr)
+library(stringr)
 
 ### import data
 # a list of species present in the study area including synonyms
