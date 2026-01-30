@@ -150,3 +150,45 @@ grid_id_bryophyte <- grid_id |>
   left_join(hex_panel_counts_bryophyte, by = "id")
 grid_id_introduced <- grid_id |> 
   left_join(hex_panel_counts_introduced, by = "id")
+
+# count number of specimen records in each grid cell
+
+# creating a trimmed dataset with all taxa included
+dat_trimmed_all <- dat |> 
+  rename(canon_name = 6, sci_name = 70, class = 8, 
+         phylum = 66, county = 19, state = 73, 
+         tax_status = 75, lat_log = 37, uncertainty = 16) |> # renaming columns
+  # keeping only relevant columns
+  select(canon_name, sci_name, class, phylum, 
+         county, state, tax_status, lat_log, uncertainty) |> 
+  collect() |> # loading the data
+  # reformatting geographic coordinates
+  separate_wider_delim(cols = lat_log, delim = ",", 
+                       names = c("latitude", "longitude")) |> 
+  separate_wider_delim(cols = latitude, delim = " ", 
+                       names = c("leave", "latitude")) |>
+  separate_wider_delim(cols = longitude, delim = ":", 
+                       names = c("out", "longitude")) |>
+  select (-c(leave, out))
+
+# formatting lat/long data for conversion to sf object
+dat_trimmed_all$longitude <- str_remove(dat_trimmed$longitude, "\\}")
+dat_trimmed_all$longitude <- str_remove(dat_trimmed$longitude, " ")
+
+# converting to sf object 
+dat_sf_removed <- st_as_sf(dat_trimmed_all, 
+                   coords = c("longitude", "latitude"), 
+                   crs = 4326) 
+dat_83_removed <- st_transform(dat_sf_removed, crs = 5070) # updating datum to match
+
+# pairing specimen records with grid
+occurrences_grid_joined_all <- st_join(dat_83_removed, grid_id, join = st_within)
+
+# counting number of records per grid cell
+hex_panel_counts_all <- occurrences_grid_joined_all |> 
+  filter(!is.na(id)) |> 
+  group_by(id) |> 
+  summarise(count_in_cell = n(), .groups = 'drop') |> 
+  ungroup() |>
+  sf::st_drop_geometry()
+
