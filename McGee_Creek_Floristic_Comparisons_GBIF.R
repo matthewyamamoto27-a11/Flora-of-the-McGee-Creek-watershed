@@ -28,6 +28,7 @@ dat_trimmed <- dat |>
   # keeping only relevant columns
   select(species, class, phylum, 
          state, lat, long, uncertainty) |> 
+  filter(uncertainty < 25,000000) |> 
   collect() # loading the data
   
 ### turning the data into and sf object and removing points east of the 100th meridian
